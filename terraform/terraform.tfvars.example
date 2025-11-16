@@ -1,0 +1,14 @@
+# Copia este archivo a terraform.tfvars y ajusta los valores
+
+subscription_id = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+resource_group_name = "rg-chat-encrypted"
+location            = "East US"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+admin_username      = "azureuser"
+vm_size             = "Standard_B1s"
+
+tags = {
+  Environment = "Demo"
+  Project     = "ChatEncrypted"
+  ManagedBy   = "Terraform"
+}
