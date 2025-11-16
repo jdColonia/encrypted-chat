@@ -1,0 +1,22 @@
+---
+- name: Configurar todas las VMs
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - common
+
+- name: Configurar servidor
+  hosts: server
+  become: yes
+
+  roles:
+    - server
+
+- name: Configurar clientes
+  hosts: clients
+  become: yes
+
+  roles:
+    - client

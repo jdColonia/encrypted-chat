@@ -1,0 +1,47 @@
+---
+- name: Actualizar cache de apt
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Instalar paquetes base
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - git
+      - tcpdump
+    state: present
+
+- name: Crear directorio del proyecto
+  file:
+    path: /home/{{ ansible_user }}/chat
+    state: directory
+    owner: '{{ ansible_user }}'
+    group: '{{ ansible_user }}'
+    mode: '0755'
+
+- name: Copiar archivos del proyecto
+  copy:
+    src: '../../../../src/{{ item }}'
+    dest: '/home/{{ ansible_user }}/chat/{{ item }}'
+    owner: '{{ ansible_user }}'
+    group: '{{ ansible_user }}'
+    mode: '0644'
+  loop:
+    - crypto_utils.py
+    - server.py
+    - client.py
+
+- name: Copiar requirements.txt
+  copy:
+    src: '../../../../requirements.txt'
+    dest: '/home/{{ ansible_user }}/chat/requirements.txt'
+    owner: '{{ ansible_user }}'
+    group: '{{ ansible_user }}'
+    mode: '0644'
+
+- name: Instalar dependencias Python
+  pip:
+    requirements: '/home/{{ ansible_user }}/chat/requirements.txt'
+    executable: pip3

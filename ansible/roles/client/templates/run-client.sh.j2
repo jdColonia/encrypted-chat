@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "=========================================="
+echo "  Cliente de Chat: {{ client_name }}"
+echo "=========================================="
+echo ""
+echo "Conectando al servidor: {{ server_private_ip }}:8888"
+echo ""
+
+cd /home/{{ ansible_user }}/chat
+
+python3 client.py "{{ client_name }}" "{{ server_private_ip }}" 8888

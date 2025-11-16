@@ -1,0 +1,24 @@
+---
+- name: Crear servicio systemd del servidor
+  template:
+    src: chat-server.service.j2
+    dest: /etc/systemd/system/chat-server.service
+    mode: '0644'
+  notify: restart chat-server
+
+- name: Habilitar servicio del servidor
+  systemd:
+    name: chat-server
+    enabled: yes
+    daemon_reload: yes
+
+- name: Iniciar servicio del servidor
+  systemd:
+    name: chat-server
+    state: started
+
+- name: Esperar a que el servidor esté escuchando
+  wait_for:
+    port: 8888
+    delay: 2
+    timeout: 30

@@ -1,0 +1,16 @@
+[Unit]
+Description=Chat Encrypted Server (Diffie-Hellman + AES)
+After=network.target
+
+[Service]
+Type=simple
+User={{ ansible_user }}
+WorkingDirectory=/home/{{ ansible_user }}/chat
+ExecStart=/usr/bin/python3 /home/{{ ansible_user }}/chat/server.py
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
