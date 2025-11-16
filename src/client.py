@@ -162,22 +162,32 @@ class SecureChatClient:
 
 
 if __name__ == "__main__":
+    import sys
+    
     print("=" * 60)
     print("🔒 Chat Cifrado con Diffie-Hellman + AES-256")
     print("=" * 60)
     print()
 
-    username = input("👤 Ingresa tu nombre de usuario: ").strip()
-    if not username:
-        print("❌ Nombre de usuario requerido")
-        exit(1)
+    # Aceptar argumentos de línea de comandos o usar input()
+    if len(sys.argv) == 4:
+        # Modo automático: python3 client.py <username> <host> <port>
+        username = sys.argv[1]
+        host = sys.argv[2]
+        port = int(sys.argv[3])
+    else:
+        # Modo interactivo
+        username = input("👤 Ingresa tu nombre de usuario: ").strip()
+        if not username:
+            print("❌ Nombre de usuario requerido")
+            exit(1)
 
-    host = input("🌐 IP del servidor (Enter para localhost): ").strip()
-    if not host:
-        host = "localhost"
+        host = input("🌐 IP del servidor (Enter para localhost): ").strip()
+        if not host:
+            host = "localhost"
 
-    port_input = input("🔌 Puerto (Enter para 8888): ").strip()
-    port = int(port_input) if port_input else 8888
+        port_input = input("🔌 Puerto (Enter para 8888): ").strip()
+        port = int(port_input) if port_input else 8888
 
     client = SecureChatClient(username)
     client.connect(host=host, port=port)
