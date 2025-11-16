@@ -24,18 +24,16 @@ class CryptoManager:
 
     def generate_dh_parameters(self):
         """Genera parámetros Diffie-Hellman (p, g)"""
-        print("🔄 Generando parámetros Diffie-Hellman...")
         self.dh_parameters = dh.generate_parameters(
             generator=2, key_size=2048, backend=default_backend()
         )
-        print("✅ Parámetros Diffie-Hellman generados")
+        print("   ✅ Parámetros generados (p: 2048 bits, g: 2)")
 
     def load_dh_parameters(self, parameters_pem):
         """Carga parámetros DH desde formato PEM"""
         self.dh_parameters = load_pem_parameters(
             parameters_pem, backend=default_backend()
         )
-        print("✅ Parámetros Diffie-Hellman cargados")
 
     def get_dh_parameters_pem(self):
         """Retorna parámetros DH en formato PEM"""
@@ -50,7 +48,6 @@ class CryptoManager:
 
         self.dh_private_key = self.dh_parameters.generate_private_key()
         self.dh_public_key = self.dh_private_key.public_key()
-        print("✅ Par de llaves Diffie-Hellman generado")
 
     def get_dh_public_key_bytes(self):
         """Retorna la llave pública DH en formato de bytes"""
@@ -71,7 +68,7 @@ class CryptoManager:
         # Derivar clave AES-256 (32 bytes) usando HKDF
         derived_key = HKDF(
             algorithm=hashes.SHA256(),
-            length=32, # 256 bits
+            length=32,  # 256 bits
             salt=None,
             info=b"chat-encryption-key",
             backend=default_backend(),
@@ -81,8 +78,7 @@ class CryptoManager:
 
         # Mostrar fingerprint de la clave compartida (para verificación)
         key_fingerprint = hashlib.sha256(derived_key).hexdigest()[:16]
-        print(f"🔑 Clave compartida AES-256 establecida")
-        print(f"🔍 Fingerprint de sesión: {key_fingerprint}")
+        print(f"   🔑 Clave AES-256 establecida (fingerprint: {key_fingerprint})")
 
         return derived_key
 

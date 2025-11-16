@@ -11,8 +11,8 @@ class SecureChatServer:
         self.port = port
         self.crypto = CryptoManager()
         self.dh_parameters = None
-        self.clients = {} # {username: socket}
-        self.dh_public_keys = {} # {username: public_key_pem}
+        self.clients = {}  # {username: socket}
+        self.dh_public_keys = {}  # {username: public_key_pem}
 
     def start(self):
         """Iniciar servidor"""
@@ -27,10 +27,9 @@ class SecureChatServer:
         print(f"📡 Escuchando en {self.host}:{self.port}")
         print("💡 El servidor actúa como relay - NO puede descifrar mensajes")
 
-        print("\n🔐 Generando parámetros Diffie-Hellman...")
+        print("🔐 Generando parámetros Diffie-Hellman...")
         self.crypto.generate_dh_parameters()
         self.dh_parameters = self.crypto.get_dh_parameters_pem()
-        print("✅ Parámetros DH generados y listos")
 
         print("⏳ Esperando conexiones...\n")
 
@@ -62,42 +61,49 @@ class SecureChatServer:
                 "type": "registration_success",
                 "message": f"Bienvenido {username}!",
             }
-            client_socket.send(json.dumps(response).encode("utf-8"))
+            client_socket.send((json.dumps(response) + "\n").encode("utf-8"))
 
             # Enviar parámetros DH al cliente
             params_msg = {
                 "type": "dh_parameters",
                 "parameters": self.dh_parameters.decode("utf-8"),
             }
-            client_socket.send(json.dumps(params_msg).encode("utf-8"))
+            client_socket.send((json.dumps(params_msg) + "\n").encode("utf-8"))
             print(f"📤 Parámetros DH enviados a {username}")
 
             # Escuchar mensajes del cliente
+            buffer = ""
             while True:
                 # Recibir mensajes del cliente
                 data = client_socket.recv(8192).decode("utf-8")
                 if not data:
                     break
 
-                # Cargar mensaje
-                message_data = json.loads(data)
-                msg_type = message_data.get("type")
+                buffer += data
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    if not line.strip():
+                        continue
 
-                # Manejar mensajes de DH
-                if msg_type == "dh_public_key":
-                    # Almacenar llave pública DH
-                    self.dh_public_keys[username] = message_data["public_key"].encode(
-                        "utf-8"
-                    )
-                    print(f"📥 Llave pública DH recibida de {username}")
+                    # Cargar mensaje
+                    message_data = json.loads(line)
+                    msg_type = message_data.get("type")
 
-                    # Si ambos usuarios han enviado sus llaves, intercambiarlas
-                    if len(self.dh_public_keys) == 2:
-                        self.exchange_dh_public_keys()
+                    # Manejar mensajes de DH
+                    if msg_type == "dh_public_key":
+                        # Almacenar llave pública DH
+                        self.dh_public_keys[username] = message_data[
+                            "public_key"
+                        ].encode("utf-8")
+                        print(f"📥 Llave pública DH recibida de {username}")
 
-                # Manejar mensajes de chat
-                elif msg_type == "chat_message":
-                    self.relay_message(username, message_data)
+                        # Si ambos usuarios han enviado sus llaves, intercambiarlas
+                        if len(self.dh_public_keys) == 2:
+                            self.exchange_dh_public_keys()
+
+                    # Manejar mensajes de chat
+                    elif msg_type == "chat_message":
+                        self.relay_message(username, message_data)
 
         except Exception as e:
             print(f"❌ Error con cliente {address}: {e}")
@@ -116,7 +122,7 @@ class SecureChatServer:
         """Intercambiar llaves públicas DH entre los dos usuarios"""
         usernames = list(self.clients.keys())
         user1, user2 = usernames[0], usernames[1]
-        print(f"\n🔑 Intercambiando llaves públicas DH entre {user1} y {user2}...")
+        print(f"\n🔑 Intercambio de llaves: {user1} ↔ {user2}")
 
         # Enviar llave pública de user2 a user1
         msg1 = {
@@ -124,7 +130,7 @@ class SecureChatServer:
             "from": user2,
             "public_key": self.dh_public_keys[user2].decode("utf-8"),
         }
-        self.clients[user1].send(json.dumps(msg1).encode("utf-8"))
+        self.clients[user1].send((json.dumps(msg1) + "\n").encode("utf-8"))
 
         # Enviar llave pública de user1 a user2
         msg2 = {
@@ -132,11 +138,9 @@ class SecureChatServer:
             "from": user1,
             "public_key": self.dh_public_keys[user1].decode("utf-8"),
         }
-        self.clients[user2].send(json.dumps(msg2).encode("utf-8"))
+        self.clients[user2].send((json.dumps(msg2) + "\n").encode("utf-8"))
 
-        print(f"✅ Intercambio DH completado")
-        print(f"🔒 {user1} y {user2} ahora pueden comunicarse de forma segura")
-        print(f"🔐 El servidor NO puede descifrar los mensajes\n")
+        print(f"   ✅ Canal seguro establecido\n")
 
     def relay_message(self, sender, message_data):
         """Retransmitir mensajes cifrados (el servidor no puede leerlos)"""
@@ -149,7 +153,7 @@ class SecureChatServer:
                         "encrypted_content": message_data["encrypted_content"],
                         "timestamp": time.time(),
                     }
-                    client_socket.send(json.dumps(relay_msg).encode("utf-8"))
+                    client_socket.send((json.dumps(relay_msg) + "\n").encode("utf-8"))
                     print(f"📨 Mensaje cifrado: {sender} -> {username}")
                 except Exception as e:
                     print(f"❌ Error enviando mensaje a {username}: {e}")

@@ -24,7 +24,7 @@ class SecureChatClient:
 
             # Registrar usuario
             register_data = {"username": self.username}
-            self.socket.send(json.dumps(register_data).encode("utf-8"))
+            self.socket.send((json.dumps(register_data) + "\n").encode("utf-8"))
 
             # Establecer conexión
             self.connected = True
@@ -42,14 +42,19 @@ class SecureChatClient:
 
     def receive_messages(self):
         """Thread para recibir mensajes del servidor"""
+        buffer = ""
         while self.connected:
             try:
                 data = self.socket.recv(8192).decode("utf-8")
                 if not data:
                     break
 
-                message = json.loads(data)
-                self.handle_received_message(message)
+                buffer += data
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    if line.strip():
+                        message = json.loads(line)
+                        self.handle_received_message(message)
 
             except Exception as e:
                 if self.connected:
@@ -64,8 +69,7 @@ class SecureChatClient:
             print(f"🎉 {message['message']}")
 
         elif msg_type == "dh_parameters":
-            # Recibir parámetros DH del servidor
-            print("\n🔐 Iniciando negociación Diffie-Hellman...")
+            print("\n🔐 Negociación Diffie-Hellman...")
             parameters_pem = message["parameters"].encode("utf-8")
             self.crypto.load_dh_parameters(parameters_pem)
 
@@ -77,12 +81,11 @@ class SecureChatClient:
                 "type": "dh_public_key",
                 "public_key": self.crypto.get_dh_public_key_bytes().decode("utf-8"),
             }
-            self.socket.send(json.dumps(dh_exchange_msg).encode("utf-8"))
-            print("📤 Llave pública DH enviada")
+            self.socket.send((json.dumps(dh_exchange_msg) + "\n").encode("utf-8"))
+            print("   → Llave pública enviada")
 
         elif msg_type == "dh_peer_public_key":
             # Recibir llave pública del peer y computar clave compartida
-            print("📥 Llave pública del peer recibida")
             self.peer_username = message["from"]
             peer_public_key = message["public_key"].encode("utf-8")
 
@@ -90,9 +93,8 @@ class SecureChatClient:
             self.crypto.compute_shared_key(peer_public_key)
             self.key_established = True
 
-            print(f"✅ Negociación Diffie-Hellman completada con {self.peer_username}")
-            print("🔒 Canal seguro establecido - Todos los mensajes están cifrados con AES-256-GCM")
-            print("💬 Puedes empezar a escribir mensajes\n")
+            print(f"   ✅ Negociación completada con {self.peer_username}")
+            print("   🔒 Canal seguro establecido con AES-256-GCM\n")
 
         elif msg_type == "encrypted_message":
             # Descifrar mensaje
@@ -105,8 +107,7 @@ class SecureChatClient:
                 # Descifrar mensaje
                 decrypted_message = self.crypto.decrypt_message(encrypted_content)
 
-                # Mostrar mensaje recibido
-                print(f"{timestamp.strftime('%H:%M:%S')} 💬 {sender}: {decrypted_message}")
+                print(f"[{timestamp.strftime('%H:%M:%S')}] {sender}: {decrypted_message}")
 
             except Exception as e:
                 print(f"❌ Error descifrando mensaje: {e}")
@@ -126,11 +127,7 @@ class SecureChatClient:
                 "type": "chat_message",
                 "encrypted_content": encrypted_content,
             }
-            self.socket.send(json.dumps(message_data).encode("utf-8"))
-
-            # Mostrar mensaje enviado
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"{timestamp} ✅ Tú: {message}")
+            self.socket.send((json.dumps(message_data) + "\n").encode("utf-8"))
 
         except Exception as e:
             print(f"❌ Error enviando mensaje: {e}")
@@ -141,8 +138,7 @@ class SecureChatClient:
             print("❌ No conectado al servidor")
             return
 
-        print("\n💬 Chat iniciado.")
-        print("📝 Escribe 'quit' para salir\n")
+        print("\n💬 Chat iniciado. Escribe 'quit' para salir\n")
 
         try:
             while True:
