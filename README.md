@@ -180,6 +180,12 @@ Tomar una de las cadenas `encrypted_content`, decodificarla desde Base64 y revis
 
 ![alt text](images/image-7.png)
 
+#### Validación para otros casos: Mismo cliente, Mismo mensaje y Diferente cliente, Mismo mensaje
+
+![alt text](images/image-9.png)
+
+![alt text](images/image-10.png)
+
 ## 6. Conclusión
 
 Se implementó correctamente un chat cifrado punto a punto donde:
