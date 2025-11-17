@@ -16,6 +16,10 @@ class SecureChatClient:
         self.key_established = False
 
     def connect(self, host="localhost", port=8888):
+        self.key_established = False
+        self.peer_username = None
+        self.crypto.shared_key = None
+        
         """Conecta al servidor y registra el usuario"""
         try:
             # Conectar al servidor
@@ -47,7 +51,10 @@ class SecureChatClient:
             try:
                 data = self.socket.recv(8192).decode("utf-8")
                 if not data:
-                    break
+                    print("⚠ Conexión cerrada por el servidor")
+                    self.connected = False
+                    return
+
 
                 buffer += data
                 while "\n" in buffer:
@@ -92,7 +99,7 @@ class SecureChatClient:
             # Computar clave compartida
             self.crypto.compute_shared_key(peer_public_key)
             self.key_established = True
-
+            
             print(f"   ✅ Negociación completada con {self.peer_username}")
             print("   🔒 Canal seguro establecido con AES-256-GCM\n")
 
@@ -105,6 +112,10 @@ class SecureChatClient:
                 timestamp = datetime.fromtimestamp(message["timestamp"])
 
                 # Descifrar mensaje
+                if not self.key_established:
+                    print("⚠ Mensaje recibido antes de establecer clave, ignorando")
+                    return
+
                 decrypted_message = self.crypto.decrypt_message(encrypted_content)
 
                 print(f"[{timestamp.strftime('%H:%M:%S')}] {sender}: {decrypted_message}")

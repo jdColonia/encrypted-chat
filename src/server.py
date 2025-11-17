@@ -33,14 +33,21 @@ class SecureChatServer:
 
         print("⏳ Esperando conexiones...\n")
 
-        while len(self.clients) < 2:
-            client_socket, address = server.accept()
-            print(f"🔌 Nueva conexión desde {address}")
+        while True:
+            try:
+                if len(self.clients) < 2:
+                    client_socket, address = server.accept()
+                    print(f"🔌 Nueva conexión desde {address}")
 
-            client_thread = threading.Thread(
-                target=self.handle_client, args=(client_socket, address)
-            )
-            client_thread.start()
+                    client_thread = threading.Thread(
+                        target=self.handle_client, args=(client_socket, address)
+                    )
+                    client_thread.start()
+                else:
+                    time.sleep(0.5)
+            except Exception as e:
+                print(f"❌ Error fatal en el bucle principal del servidor: {e}")
+                break
 
         print("\n✅ Dos clientes conectados - Chat activo")
 
@@ -55,6 +62,9 @@ class SecureChatServer:
             username = register_data["username"]
             self.clients[username] = client_socket
             print(f"✅ Usuario registrado: {username}")
+            
+            if username in self.dh_public_keys:
+                del self.dh_public_keys[username]
 
             # Enviar confirmación de registro
             response = {
@@ -115,6 +125,7 @@ class SecureChatServer:
                     del self.clients[user]
                     if user in self.dh_public_keys:
                         del self.dh_public_keys[user]
+                    self.try_reset_key_exchange()
                     print(f"🔌 Cliente {user} desconectado")
                     break
 
@@ -157,6 +168,10 @@ class SecureChatServer:
                     print(f"📨 Mensaje cifrado: {sender} -> {username}")
                 except Exception as e:
                     print(f"❌ Error enviando mensaje a {username}: {e}")
+                    
+    def try_reset_key_exchange(self):
+        if len(self.dh_public_keys) < 2:
+            print("♻ Reiniciando intercambio Diffie-Hellman, falta un cliente")
 
 
 if __name__ == "__main__":
